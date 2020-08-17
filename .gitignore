@@ -1,0 +1,7 @@
+*.wav
+*.npy
+*.mf
+__pycache__
+output
+*.hdf5
+*.org
