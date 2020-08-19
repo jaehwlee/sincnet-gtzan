@@ -30,9 +30,9 @@ class Validation():
         if epoch is None or epoch%N_eval_epoch==0:
             print('Valuating test set...')
             
-
+            # 테스트 셋의 개수, 지금은 100개지
             snt_te=len(wav_lst_te)
-
+            
             err_sum = 0
             err_sum_snt = 0
             stn_sum = 0
@@ -40,16 +40,24 @@ class Validation():
                 print('WLEN: '+str(wlen))
                 print('WSHIFT: '+str(wshift))
                 pbar = tqdm(total=snt_te)
+            
+            # 전체 데이터 셋에 대하여!
             for i in range(snt_te):
+                # 데이터 셋을 읽어들임
                 [signal, fs] = sf.read(data_folder+wav_lst_te[i])
-
+                
+                # 데이터
                 signal = np.array(signal)
+                # 정답 라벨
                 lab_batch=lab_dict[wav_lst_te[i]]
 
                 #split signals into chunck
                 beg_samp=0
                 end_samp=wlen
-
+                # wlen=3200, wshift = 160, 이게 뭔데?
+                # N_ft = 그럼 몇인데?
+                # print(signal.shape[0]
+                # print(N_fr)
                 N_fr=int((signal.shape[0]-wlen)/(wshift))
 
                 sig_arr=np.zeros([Batch_dev,wlen])
@@ -61,16 +69,21 @@ class Validation():
                 
                 
                 while end_samp<signal.shape[0]: #for each chunck
+                    # 각 청크마다
                     sig_arr[count_fr,:]=signal[beg_samp:end_samp]
                     beg_samp=beg_samp+wshift
                     end_samp=beg_samp+wlen
                     count_fr=count_fr+1
                     count_fr_tot=count_fr_tot+1
+                    # Batch_dev는 128이다
+                    # 프레임이 128개 모이면 하나 프레딕트 하는 건가
                     if count_fr==Batch_dev: 
                         a,b = np.shape(sig_arr)
                         inp = sig_arr.reshape(a,b,1)
                         inp = np.array(inp)
-                        pout[count_fr_tot-Batch_dev:count_fr_tot,:] = self.model.predict(inp, verbose=0)
+                        # verbose=1로 어떻게 되는지를 좀 파악해보자
+                        pout[count_fr_tot-Batch_dev:count_fr_tot,:] = self.model.predict(inp, verbose=1)
+                        #pout[count_fr_tot-Batch_dev:count_fr_tot,:] = self.model.predict(inp, verbose=0)
                         count_fr=0
                         sig_arr=np.zeros([Batch_dev,wlen])
 
@@ -80,15 +93,22 @@ class Validation():
                     a,b = np.shape(inp)
                     inp = inp.reshape(a,b,1)
                     inp = np.array(inp)
-                    pout[count_fr_tot-count_fr:count_fr_tot,:] = self.model.predict(inp, verbose=0)
+                    #pout[count_fr_tot-count_fr:count_fr_tot,:] = self.model.predict(inp, verbose=0)
+                    pout[count_fr_tot-count_fr:count_fr_tot,:] = self.model.predict(inp, verbose=1)
 
                 #Prediction for each chunkc  and calculation of average error
                 pred = np.argmax(pout, axis=1)
+                # 이것들도 프린트해서 뭔지 알아보자
+               
                 err = np.mean(pred!=lab)
-                
+       
+                print('pred : {}, err : {}'.format(pred, err))
                 #Calculate accuracy on the whole sentence
+                # 한 곡에 대해서 majority voting을 수행했다고 보면 되겠다 여기는
                 best_class = np.argmax(np.sum(pout, axis=0))
-
+               
+                # 이거는 뭐가 나올까
+                print(float((best_class!=lab[0]))               
                 err_sum_snt = err_sum_snt+float((best_class!=lab[0]))
                 err_sum = err_sum + err
 
@@ -99,8 +119,11 @@ class Validation():
                 if debug:
                     pbar.set_description('acc: {}, acc_snt: {}'.format(temp_acc, temp_acc_stn))
                     pbar.update(1)
+                    # 어 그냥 디버그 키면 되겠는데?
+      
 
             #average accuracy
+            # acc는 모든 청크에 대한 정확도라면, acc_snt는 majoiry vote사용한 정확도네
             acc = 1-(err_sum/snt_te)
             acc_snt = 1-(err_sum_snt/snt_te)
             if debug:
