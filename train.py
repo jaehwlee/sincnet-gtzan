@@ -103,5 +103,6 @@ callbacks = [tb,checkpointer,validation]
 if pt_file!='none':
    model.load_weights(pt_file)
 
+# steps_per_epoch = 훈련 샘플 개수 // 배치사이즈, 여기선 800이라고 그냥 박아놨는데 훈련샘플개수를 먼저 알아야 뭘 하던말던 하지..!, 그냥 이거 지워서 디폴트 값인 None했을 떄 어떻게 되는지 지켜보자
 train_generator = batchGenerator(batch_size,data_folder,wav_lst_tr,snt_tr,wlen,lab_dict,0.2, out_dim)
 model.fit_generator(train_generator, steps_per_epoch=N_batches, epochs=N_epochs, verbose=1, callbacks=callbacks)
